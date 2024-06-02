@@ -48,19 +48,26 @@ kv -f test.json hello
 You can use the key-value store in your Zig code.
 
 ```zig
-var kv = Kv.init(allocator);
-defer kv.deinit();
+pub fn main() !void {
+  var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+  defer _ = gpa.deinit();
 
-// Load key-value pairs from a file
-try kv.load("test.json);
+  const allocator = gpa.allocator();
 
-// Set and get a few values
-try kv.put("hello", "world");
-try kv.put("one", "1");
-_ = try kv.get("hello");
+  var kv = Kv.init(allocator);
+  defer kv.deinit();
 
-// Save the key-value pairs to a file
-try kv.save("test.json");
+  // Load key-value pairs from a file
+  try kv.load("test.json);
+
+  // Set and get a few values
+  try kv.put("hello", "world");
+  try kv.put("one", "1");
+  _ = try kv.get("hello");
+
+  // Save the key-value pairs to a file
+  try kv.save("test.json");
+}
 ```
 
 ## Installation
