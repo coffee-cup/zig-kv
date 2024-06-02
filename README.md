@@ -59,7 +59,7 @@ pub fn main() !void {
   var kv = Kv.init(allocator);
   defer kv.deinit();
 
-  // Load key-value pairs from a file
+  // Load key-value pairs from a file (this is optional)
   try kv.load("test.json");
 
   // Set and get a few values
@@ -67,7 +67,7 @@ pub fn main() !void {
   try kv.put("one", "1");
   _ = try kv.get("hello");
 
-  // Save the key-value pairs to a file
+  // Save the key-value pairs to a file (also optional)
   try kv.save("test.json");
 }
 ```
