@@ -58,7 +58,7 @@ pub fn main() !void {
   defer kv.deinit();
 
   // Load key-value pairs from a file
-  try kv.load("test.json);
+  try kv.load("test.json");
 
   // Set and get a few values
   try kv.put("hello", "world");
