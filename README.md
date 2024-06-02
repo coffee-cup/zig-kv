@@ -1,5 +1,7 @@
 # Zig key-value store
 
+[![CI](https://github.com/coffee-cup/zig-kv/actions/workflows/main.yml/badge.svg)](https://github.com/coffee-cup/zig-kv/actions/workflows/main.yml)
+
 A simple key-value store implemented in Zig. Stores can be read and written to disk.
 
 ## CLI
