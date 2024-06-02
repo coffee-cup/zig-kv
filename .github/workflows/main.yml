@@ -19,7 +19,7 @@ jobs:
           version: 0.12.0
 
       - name: Build and Test
-        run: zig build test
+        run: zig build test --summary all
 
   lint:
     runs-on: ubuntu-latest
