@@ -48,6 +48,7 @@ pub fn main() !void {
     defer store.deinit();
     store.load(filename) catch {};
 
+    // Get a single item if only 1 positional argument is provided
     if (res.positionals.len == 1) {
         // Get a single item
         const item = store.get(res.positionals[0]);
@@ -60,6 +61,12 @@ pub fn main() !void {
         return;
     }
 
+    if (res.positionals.len % 2 != 0) {
+        std.debug.print("Expected an even number of positional arguments.\n", .{});
+        return;
+    }
+
+    // Load the key-value pairs into the store
     var key: ?[]const u8 = null;
     for (res.positionals) |pos| {
         if (key) |k| {
