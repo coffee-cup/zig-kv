@@ -25,6 +25,12 @@ pub const Kv = struct {
     }
 
     pub fn put(self: *Kv, key: []const u8, value: []const u8) !void {
+        // Free the old value and key if it exists
+        if (self.store.fetchOrderedRemove(key)) |entry| {
+            self.allocator.free(entry.key);
+            self.allocator.free(entry.value);
+        }
+
         // Copy the key and value into the allocator
         try self.store.put(try self.allocator.dupe(u8, key), try self.allocator.dupe(u8, value));
     }
@@ -52,39 +58,18 @@ pub const Kv = struct {
         const file = try std.fs.cwd().openFile(filename, .{});
         defer file.close();
 
-        const contents = try file.readToEndAlloc(self.allocator, std.math.maxInt(usize));
-        defer self.allocator.free(contents);
+        var arena = std.heap.ArenaAllocator.init(self.allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
 
-        const parsed = try std.json.parseFromSlice(std.json.ArrayHashMap([]const u8), self.allocator, contents, .{});
-        defer parsed.deinit();
+        const contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+
+        const parsed = try std.json.parseFromSlice(std.json.ArrayHashMap([]const u8), allocator, contents, .{});
 
         var iterator = parsed.value.map.iterator();
         while (iterator.next()) |entry| {
             try self.put(entry.key_ptr.*, entry.value_ptr.*);
         }
-
-        // const json = try std.json.parseFromSlice(std.json.Value, self.allocator, contents, .{});
-        // defer json.deinit();
-
-        // // Parse all the string key-value pairs from the JSON object
-        // // panic if the value is not a string
-        // switch (json.value) {
-        //     .object => |obj| {
-        //         var iterator = obj.iterator();
-        //         while (iterator.next()) |entry| {
-        //             const value = switch (entry.value_ptr.*) {
-        //                 .string => |str| str,
-        //                 else => @panic("Expected string value"),
-        //             };
-
-        //             // Copy value into the kv store
-        //             try self.put(entry.key_ptr.*, value);
-        //         }
-        //     },
-        //     else => {
-        //         @panic("Expected JSON object");
-        //     },
-        // }
     }
 
     pub fn print(self: *Kv) void {
@@ -97,8 +82,12 @@ pub const Kv = struct {
     }
 };
 
-pub fn doSomething() void {
-    std.debug.print("Doing something...\n", .{});
+fn getRandomFilename(buffer: []u8) ![]const u8 {
+    var rng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
+    const format = "/tmp/kv-{}.json";
+
+    const random_number = rng.random().int(u32);
+    return try std.fmt.bufPrint(buffer, format, .{random_number});
 }
 
 test "creates a new kv store" {
@@ -118,12 +107,17 @@ test "puts and gets items into the store" {
     try std.testing.expect(std.mem.eql(u8, kv.get("hello") orelse unreachable, "world"));
 }
 
-fn getRandomFilename(buffer: []u8) ![]const u8 {
-    var rng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
-    const format = "/tmp/kv-{}.json";
+test "overwrites items in the store" {
+    const allocator = std.testing.allocator;
+    var kv = Kv.init(allocator);
+    defer kv.deinit();
 
-    const random_number = rng.random().int(u32);
-    return try std.fmt.bufPrint(buffer, format, .{random_number});
+    try kv.put("hello", "world");
+    try kv.put("hello", "mars");
+
+    try std.testing.expect(kv.store.count() == 1);
+
+    try std.testing.expect(std.mem.eql(u8, kv.get("hello") orelse unreachable, "mars"));
 }
 
 test "reads and writes kv from a file" {

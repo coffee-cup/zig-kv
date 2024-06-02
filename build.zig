@@ -15,11 +15,14 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const clap = b.dependency("clap", .{});
+    const clap_module = clap.module("clap");
+
     const lib = b.addStaticLibrary(.{
         .name = "zig-kv",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/kv.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -35,6 +38,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("clap", clap_module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -67,7 +71,7 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/kv.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -79,6 +83,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe_unit_tests.root_module.addImport("clap", clap_module);
+
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
     // Similar to creating the run step earlier, this exposes a `test` step to
