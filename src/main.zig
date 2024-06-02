@@ -2,7 +2,15 @@ const std = @import("std");
 const kv = @import("kv.zig");
 const clap = @import("clap");
 
-const defaultFilename = "~/.kv.json";
+const Allocator = std.mem.Allocator;
+
+fn getDefaultFilename(allocator: Allocator, buffer: []u8) ![]const u8 {
+    var env_map = try std.process.getEnvMap(allocator);
+    defer env_map.deinit();
+
+    const home = env_map.get("HOME") orelse unreachable;
+    return try std.fmt.bufPrint(buffer, "{s}/.kv.json", .{home});
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -32,6 +40,8 @@ pub fn main() !void {
         return;
     }
 
+    var buffer: [64]u8 = undefined;
+    const defaultFilename = try getDefaultFilename(allocator, &buffer);
     const filename = res.args.file orelse defaultFilename;
 
     var store = kv.Kv.init(allocator);
