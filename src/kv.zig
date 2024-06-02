@@ -59,7 +59,7 @@ pub const Kv = struct {
         var string = std.ArrayList(u8).init(self.allocator);
         defer string.deinit();
 
-        // Stringify
+        // Stringify the json.ArrayHashMap created above
         try std.json.stringify(value, .{}, string.writer());
 
         // Write the string to the file
